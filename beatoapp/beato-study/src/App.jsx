@@ -15,6 +15,7 @@ const S = {
 };
 
 const STORAGE_KEY = "beato-study-lessons-v1";
+const BASE_URL = "https://learn.beatobook.com/";
 
 // Suggested learning buckets (ordered). Each bucket is matched by tag/keyword.
 const ORDER_BUCKETS = [
@@ -61,7 +62,7 @@ function parseTOC(text) {
       return {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + "-" + idx),
         title: title || `Lesson ${idx + 1}`,
-        url: url || "",
+        url: url || BASE_URL,
         tags,
         notes: "",
         done: false,
@@ -80,7 +81,9 @@ function App() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setLessons(JSON.parse(raw));
-    } catch {}
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
   // Save to localStorage
@@ -176,7 +179,9 @@ If helpful, relate it to earlier topics (intervals → scales → diatonic triad
       try {
         const arr = JSON.parse(String(reader.result || "[]"));
         if (Array.isArray(arr)) setLessons(arr);
-      } catch (e) { alert("Invalid JSON"); }
+      } catch {
+        alert("Invalid JSON");
+      }
     };
     reader.readAsText(file);
   }
@@ -185,13 +190,16 @@ If helpful, relate it to earlier topics (intervals → scales → diatonic triad
   useEffect(() => {
     if (lessons.length) return;
     const demo = parseTOC(
-`Naming Intervals | https://learn.beatobook.com/intervals | intervals
-Major Scale (Triads and Sevenths) | https://learn.beatobook.com/major-triads-7ths | triads,sevenths
-The Circle of 5ths | https://learn.beatobook.com/circle | key signature, circle of fifths
-Major Scale Modal Sounds | https://learn.beatobook.com/modes | modes
-Building Diatonic Triads | https://learn.beatobook.com/diatonic-triads | triads
-Cadences | https://learn.beatobook.com/cadences | cadences, voice-leading
-Secondary Dominants | https://learn.beatobook.com/secondary | secondary dominant`
+`Introduction | ${BASE_URL} |
+How to Use This Book | ${BASE_URL} |
+Chapter Video | ${BASE_URL} |
+Theory and Harmony | ${BASE_URL} | theory, harmony
+Naming Intervals | ${BASE_URL} | intervals
+Enharmonic Intervals | ${BASE_URL} | intervals
+The Circle of 5ths | ${BASE_URL} | key signature, circle of fifths
+Chords and Their Formulas | ${BASE_URL} | chords
+Major Scale (Triads and Sevenths) | ${BASE_URL} | triads,sevenths
+Major Scale Modal Sounds | ${BASE_URL} | modes`
     );
     setLessons(demo);
   }, []); // run once
@@ -239,7 +247,7 @@ Secondary Dominants | https://learn.beatobook.com/secondary | secondary dominant
               <div style={{ flex: "1 1 auto" }}>
                 <div style={{ fontWeight: 600, fontSize: 16 }}>
                   {i + 1}.{" "}
-                  <a href={l.url || "#"} target="_blank" rel="noreferrer">
+                  <a href={l.url || BASE_URL} target="_blank" rel="noreferrer">
                     {l.title}
                   </a>
                 </div>
