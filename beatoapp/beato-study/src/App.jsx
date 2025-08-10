@@ -15,6 +15,7 @@ const S = {
 };
 
 const STORAGE_KEY = "beato-study-lessons-v1";
+const BASE_URL = "https://learn.beatobook.com/";
 
 // Suggested learning buckets (ordered). Each bucket is matched by tag/keyword.
 const ORDER_BUCKETS = [
@@ -61,7 +62,7 @@ function parseTOC(text) {
       return {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + "-" + idx),
         title: title || `Lesson ${idx + 1}`,
-        url: url || "",
+        url: url || BASE_URL,
         tags,
         notes: "",
         done: false,
@@ -189,16 +190,16 @@ If helpful, relate it to earlier topics (intervals → scales → diatonic triad
   useEffect(() => {
     if (lessons.length) return;
     const demo = parseTOC(
-`Introduction | https://learn.beatobook.com/introduction |
-How to Use This Book | https://learn.beatobook.com/how-to-use-this-book |
-Chapter Video | https://learn.beatobook.com/chapter-video |
-Theory and Harmony | https://learn.beatobook.com/theory-and-harmony | theory, harmony
-Naming Intervals | https://learn.beatobook.com/naming-intervals | intervals
-Enharmonic Intervals | https://learn.beatobook.com/enharmonic-intervals | intervals
-The Circle of 5ths | https://learn.beatobook.com/circle-of-5ths | key signature, circle of fifths
-Chords and Their Formulas | https://learn.beatobook.com/chords-and-their-formulas | chords
-Major Scale (Triads and Sevenths) | https://learn.beatobook.com/major-scale-triads-sevenths | triads,sevenths
-Major Scale Modal Sounds | https://learn.beatobook.com/major-scale-modal-sounds | modes`
+`Introduction | ${BASE_URL} |
+How to Use This Book | ${BASE_URL} |
+Chapter Video | ${BASE_URL} |
+Theory and Harmony | ${BASE_URL} | theory, harmony
+Naming Intervals | ${BASE_URL} | intervals
+Enharmonic Intervals | ${BASE_URL} | intervals
+The Circle of 5ths | ${BASE_URL} | key signature, circle of fifths
+Chords and Their Formulas | ${BASE_URL} | chords
+Major Scale (Triads and Sevenths) | ${BASE_URL} | triads,sevenths
+Major Scale Modal Sounds | ${BASE_URL} | modes`
     );
     setLessons(demo);
   }, []); // run once
@@ -246,7 +247,7 @@ Major Scale Modal Sounds | https://learn.beatobook.com/major-scale-modal-sounds 
               <div style={{ flex: "1 1 auto" }}>
                 <div style={{ fontWeight: 600, fontSize: 16 }}>
                   {i + 1}.{" "}
-                  <a href={l.url || "#"} target="_blank" rel="noreferrer">
+                  <a href={l.url || BASE_URL} target="_blank" rel="noreferrer">
                     {l.title}
                   </a>
                 </div>
