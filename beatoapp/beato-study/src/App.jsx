@@ -80,7 +80,9 @@ function App() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setLessons(JSON.parse(raw));
-    } catch {}
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
   // Save to localStorage
@@ -176,7 +178,9 @@ If helpful, relate it to earlier topics (intervals → scales → diatonic triad
       try {
         const arr = JSON.parse(String(reader.result || "[]"));
         if (Array.isArray(arr)) setLessons(arr);
-      } catch (e) { alert("Invalid JSON"); }
+      } catch {
+        alert("Invalid JSON");
+      }
     };
     reader.readAsText(file);
   }
@@ -185,13 +189,16 @@ If helpful, relate it to earlier topics (intervals → scales → diatonic triad
   useEffect(() => {
     if (lessons.length) return;
     const demo = parseTOC(
-`Naming Intervals | https://learn.beatobook.com/intervals | intervals
-Major Scale (Triads and Sevenths) | https://learn.beatobook.com/major-triads-7ths | triads,sevenths
-The Circle of 5ths | https://learn.beatobook.com/circle | key signature, circle of fifths
-Major Scale Modal Sounds | https://learn.beatobook.com/modes | modes
-Building Diatonic Triads | https://learn.beatobook.com/diatonic-triads | triads
-Cadences | https://learn.beatobook.com/cadences | cadences, voice-leading
-Secondary Dominants | https://learn.beatobook.com/secondary | secondary dominant`
+`Introduction | https://learn.beatobook.com/introduction |
+How to Use This Book | https://learn.beatobook.com/how-to-use-this-book |
+Chapter Video | https://learn.beatobook.com/chapter-video |
+Theory and Harmony | https://learn.beatobook.com/theory-and-harmony | theory, harmony
+Naming Intervals | https://learn.beatobook.com/naming-intervals | intervals
+Enharmonic Intervals | https://learn.beatobook.com/enharmonic-intervals | intervals
+The Circle of 5ths | https://learn.beatobook.com/circle-of-5ths | key signature, circle of fifths
+Chords and Their Formulas | https://learn.beatobook.com/chords-and-their-formulas | chords
+Major Scale (Triads and Sevenths) | https://learn.beatobook.com/major-scale-triads-sevenths | triads,sevenths
+Major Scale Modal Sounds | https://learn.beatobook.com/major-scale-modal-sounds | modes`
     );
     setLessons(demo);
   }, []); // run once
