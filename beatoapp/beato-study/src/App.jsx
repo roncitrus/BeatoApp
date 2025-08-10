@@ -54,15 +54,24 @@ function parseTOC(text) {
     .filter(Boolean)
     .map((line, idx) => {
       const parts = line.split("|").map(x => x.trim());
-      const [title, url, tagCsv] = parts;
+      let [title, urlMaybe, tagCsv] = parts;
+
+      // If the second field isn't an explicit URL, treat it as part of the tags
+      // and fall back to the Beato Book homepage for the link.
+      if (urlMaybe && !/^https?:\/\//i.test(urlMaybe)) {
+        tagCsv = [urlMaybe, tagCsv].filter(Boolean).join(",");
+        urlMaybe = "";
+      }
+
       const tags = (tagCsv || "")
         .split(/[,;]/)
         .map(t => t.trim())
         .filter(Boolean);
+
       return {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + "-" + idx),
         title: title || `Lesson ${idx + 1}`,
-        url: url || BASE_URL,
+        url: urlMaybe || BASE_URL,
         tags,
         notes: "",
         done: false,
