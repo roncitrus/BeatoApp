@@ -16,6 +16,7 @@ const S = {
 
 const STORAGE_KEY = "beato-study-lessons-v1";
 const BASE_URL = "https://learn.beatobook.com/";
+const PARAM = "beato"; // hash/query param carrying the lesson title
 
 // Suggested learning buckets (ordered). Each bucket is matched by tag/keyword.
 const ORDER_BUCKETS = [
@@ -41,7 +42,6 @@ function bucketIndex(lesson) {
     const any = ORDER_BUCKETS[i].match.some(k => hay.includes(normalize(k)));
     if (any) return i;
   }
-  // default: place near start if “intro/overview”, else middle
   if (hay.includes("intro") || hay.includes("overview")) return 0;
   return Math.floor(ORDER_BUCKETS.length / 2);
 }
@@ -56,8 +56,6 @@ function parseTOC(text) {
       const parts = line.split("|").map(x => x.trim());
       let [title, urlMaybe, tagCsv] = parts;
 
-      // If the second field isn't an explicit URL, treat it as part of the tags
-      // and fall back to the Beato Book homepage for the link.
       if (urlMaybe && !/^https?:\/\//i.test(urlMaybe)) {
         tagCsv = [urlMaybe, tagCsv].filter(Boolean).join(",");
         urlMaybe = "";
@@ -71,12 +69,19 @@ function parseTOC(text) {
       return {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + "-" + idx),
         title: title || `Lesson ${idx + 1}`,
-        url: urlMaybe || BASE_URL,
+        // IMPORTANT: always point to BASE_URL, carry the lesson title in the hash
+        url: `${BASE_URL}#${PARAM}=${encodeURIComponent(title || `Lesson ${idx + 1}`)}`,
         tags,
         notes: "",
         done: false,
       };
     });
+}
+
+// --- Bookmarklet (drag to bookmarks bar). After Beato loads, click it to jump to the lesson in the hash.
+function bookmarkletHref() {
+  const code = `(function(){try{var p=new URLSearchParams(location.search||location.hash.slice(1)),w=p.get('${PARAM}');if(!w){alert('No ${PARAM}=… in URL');return;}var q=function(s,t){return new Promise(function(r,j){var t0=performance.now(),f=function(){var e=document.querySelector(s);if(e)return r(e);if(performance.now()-t0>t)return j(new Error('timeout'));requestAnimationFrame(f)};f()})};var byText=function(t){t=(t||'').trim();var A=[...document.querySelectorAll('button')];return A.find(b=>b.textContent.trim()===t)};var sr=()=>[...document.querySelectorAll('button .sr-only')].find(s=>/Open Table of Contents/i.test(s.textContent))?.closest('button');sr()?.click();q('[role="dialog"]',10000).then(function(){['Theory and Harmony','Chord Forms','Scales and Arpeggios','Linear Studies','Technique and Practice'].forEach(function(n){var b=byText(n);if(b&&b.getAttribute('aria-expanded')==='false')b.click()});var L=byText(w);if(L){L.click()}else{alert('Could not find: '+w)}}).catch(console.warn)}catch(e){console.error(e);alert('Bookmarklet error: '+e.message)}})();`;
+  return `javascript:${encodeURIComponent(code)}`;
 }
 
 function App() {
@@ -100,6 +105,55 @@ function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lessons));
     setDirty(false);
   }, [lessons]);
+
+  // --- If this code runs on the Beato domain (e.g., via userscript), auto-click the lesson carried in hash/query.
+  useEffect(() => {
+    if (!/learn\.beatobook\.com$/.test(location.host)) return;
+    const params = new URLSearchParams(location.search || location.hash.slice(1));
+    const wanted = params.get(PARAM);
+    if (!wanted) return;
+
+    const waitFor = (sel, timeout = 10000) =>
+      new Promise((res, rej) => {
+        const t0 = performance.now();
+        const tick = () => {
+          const el = document.querySelector(sel);
+          if (el) return res(el);
+          if (performance.now() - t0 > timeout) return rej(new Error("timeout"));
+          requestAnimationFrame(tick);
+        };
+        tick();
+      });
+
+    const findButtonByText = (txt) =>
+      [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === txt);
+
+    (async () => {
+      const tocBtn = [...document.querySelectorAll("button .sr-only")]
+        .find((s) => /Open Table of Contents/i.test(s.textContent))
+        ?.closest("button");
+      tocBtn?.click();
+
+      await waitFor('[role="dialog"]');
+
+      const sections = [
+        "Theory and Harmony",
+        "Chord Forms",
+        "Scales and Arpeggios",
+        "Linear Studies",
+        "Technique and Practice",
+      ];
+      for (const name of sections) {
+        const secBtn = findButtonByText(name);
+        if (secBtn && secBtn.getAttribute("aria-expanded") === "false") secBtn.click();
+      }
+
+      const lessonBtn = findButtonByText(wanted);
+      if (lessonBtn) lessonBtn.click();
+
+      history.replaceState({}, "", location.pathname); // clean hash
+    })().catch(console.warn);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = normalize(filter);
@@ -164,7 +218,6 @@ If helpful, relate it to earlier topics (intervals → scales → diatonic triad
       await navigator.clipboard.writeText(prompt);
       alert("Prompt copied to clipboard. Paste it into your GPT chat 👍");
     } catch {
-      // fallback: open a new tab with the prompt in the URL hash (so you can copy)
       const blob = new Blob([prompt], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
@@ -247,6 +300,18 @@ Major Scale Modal Sounds | ${BASE_URL} | modes`
             <button style={S.btn} onClick={addFromPaste}>Add lessons</button>
           </div>
         </details>
+      </div>
+
+      {/* Bookmarklet helper */}
+      <div style={{ ...S.card }}>
+        <div style={{ marginBottom: 6, fontWeight: 600 }}>Jump-to-lesson helper</div>
+        <div style={S.small}>
+          1) Click a lesson below (opens Beato with <code>#{PARAM}=…</code>). 2) On the Beato page, click this{" "}
+          <a href={bookmarkletHref()} title="Drag this to your bookmarks bar">
+            <b>Beato Jump</b>
+          </a>{" "}
+          bookmarklet to auto-open the exact lesson.
+        </div>
       </div>
 
       <ol style={{ paddingLeft: 0, listStyle: "none", marginTop: 12 }}>
